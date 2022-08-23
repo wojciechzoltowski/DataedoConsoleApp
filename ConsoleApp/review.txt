@@ -1,0 +1,33 @@
+﻿Code review:
+
+Generalnie do mocnego przepisania :) Zwłaszcza jeśli miałoby to być docelowo bardziej ogólne i reużywalne rozwiązanie
+
+Program.cs
+3-8 - using powinny być przed przestrzenią nazw (na górze pliku), ale w tym przypadku żadne nie jest użyte więc są po prostu do usunięcia,
+15	- Literówka w nazwie pliku. Powinno być data.csv, a nie dataa.csv. Dodatkowo dobrze tego zmienne (tzw. magic string) trzymać jako osobną zmienną na górze klasy jako readonly. A ogólnie to pewnie najlepiej by było jakby można było ją na początku wprowadzić w konsoli i wtedy można używać inne pliki. (Na potrzeby tego programu może być po prostu na górze klasy)
+
+DataReader.cs
+3-8 - Ten sam problem co w Program.cs. Using nad namespace, tym razem są potrzebne, ale dalej powinny zniknąć nieużywane.
+12  - Niepotrzebna deklaracja zmiennej
+14  - Nieużywana zmienna bool printData = true - usunąć. Chyba, że w przyszłości będzie używana to dodać warunek przed printowaniem, ale wtedy też należy zmienić nazwę funkcji, bo domyślnie sugeruje wyświetlenie.
+14  - Zdecydowanie za długa funkcja. Powinny być przynajmniej 3 funkcje - od importowania (i przetworzenia przy pomocy odpowiednich funkcji LINQ), policzenia "dzieci" i wyświetlenia
+16  - Lepiej zadeklarować po prostu pustą listę List<ImportedObject> importedObjects = new List<ImportedObject>(); i bez pierwszego pustego obiektu. Dodatkowo może zmienić na np. databaseObject? ImportedObject nie mówi wprost czym się zajmujemy.
+18  - Brak jakiegokolwiek wyłapywania błędów, a ścieżka do pliku prawie zawsze tego wymaga. Jak nie try catch to chociaż jakieś proste sprawdzenie ścieżki, albo czy plik istnieje np. if (!File.Exists(fileToImport)) { Console.Write("Plik nie istnieje"); return; }. Najlepiej na samym początku funkcji.
+24  - Brak sprawdzenia czy są puste wiersze. Wystarczy np. if (!string.IsNullOrEmpty(line)) { importedLines.Add(line); }
+27  - Zły warunek w pętli for. Powinno być i < importedLines.Count. W którymś miejscu powinno się też pominąć pierwszą linię, bo to tylko nagłówek. Można też w warunku pętli lub po prostu ominąć pierwszą iterację poprzez continue;
+49  - Powinno być ToUpper(), żeby zachować spójność. Wtedy w liniach 77 i 86 trzeba usunąć
+50  - Można na wszelki wypadek dodać poprawki też dla DataType
+18-50-Najszybciej będzie zastąpić odczytywanie z pliku i "czyszczenie" gotowymi funkcjami z LINQ zamiast pisać samemu. Najlepiej jako jedna osobna funkcja (np. ImportAndClearData). Wtedy można na początku zainicjalizować po prostu listę i stworzyć na ich podstawie wszystkie obiekty listy w odpowiednim formacie.
+62  - Lepiej importedObject.NumberOfChildren++;
+100 - Console.ReadLine() raczej lepiej w Program.cs w klasie Main skoro służy tylko do zatrzymania na końcu programu, żeby przejrzeć wyświetlenie. Ostatecznie na jedno wychodzi, a nie ma losowej linii na końcu funkcji. Trzeba wtedy pamiętać o dodaniu using System; jeśli wcześniej usunęliśmy nadmiarowe odwołania.
+
+W wielu miejscach w pliku:
+- można połączyć ify w jeden(58-60, 77-79, 86-88), żeby uniknąć wielokrotnego zagnieżdżania jeśli nie jest to potrzebne
+- w foreachach można zastosować silne typowanie zamiast var
+
+Klasy ImportedObject i ImportedObjectBaseClass:
+- Warto klasy ImportedObject i Imported ObjectBaseClass przenieść do osobnych plików i np. do wspólnego folderu Models oraz dodać { get; set; } w brakujących miejscach (i pisać w jednej linii te co są), dla zwiększenia czytelności
+- Jak wcześniej - ImportedObject nie mówi jednoznacznie czym jest. Może lepszy np. DatabaseObject? ImportedObjectBaseClass można wtedy też skrócić na ImportedObject (może taka ogólniejsza nazwa zostać, bo może będzie można wykorzystać do importowania innych obiektów w przyszłości)
+- Niepotrzebna ponowna delkaracja zmiennej Name w ImportedObject.
+- IsNullable to zmienna boolowska więc powinna być typu bool. Poprawi to czytelność. Należy wtedy zmienić sposób odczytu IsNullable = columns.ElementAtOrDefault(6) == "1" z pliku oraz wyrażenie warunkowe z Column.IsNullable == "1" na po prostu Column.IsNullable.
+- NumberOfChildren zawsze będzie liczbą całkowitą więc może być int.
